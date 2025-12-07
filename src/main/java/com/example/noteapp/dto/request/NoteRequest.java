@@ -1,5 +1,6 @@
 package com.example.noteapp.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -7,8 +8,9 @@ import java.time.LocalDateTime;
 public class NoteRequest {
     private String title;
     private String content;
-    private String backgroundColor; // Mã màu (ví dụ: #FFFFFF)
+
+    private String backgroundColor;
     private boolean isPinned;
     private boolean isArchived;
-    private LocalDateTime reminder; // Có thể null
+    private LocalDateTime reminder;
 }

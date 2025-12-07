@@ -9,7 +9,9 @@ import java.util.List;
 @Repository
 public interface LabelRepository extends JpaRepository<Label, Long> {
 
-    // Lấy danh sách Label của một User cụ thể
-    // (Giả sử Label có trường userId hoặc quan hệ với User)
     List<Label> findByUserId(Long userId);
+
+    // --- THÊM DÒNG NÀY ---
+    // Kiểm tra xem user này đã có nhãn tên này chưa
+    boolean existsByUserIdAndName(Long userId, String name);
 }

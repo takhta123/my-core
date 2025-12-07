@@ -5,6 +5,7 @@ import com.example.noteapp.dto.request.UpdateProfileRequest;
 import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.entity.User;
 import com.example.noteapp.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +27,7 @@ public class UserController {
 
     // 2. Cập nhật hồ sơ (Tên, Avatar)
     @PutMapping("/profile")
-    public ApiResponse<User> updateProfile(@RequestBody UpdateProfileRequest request, Principal principal) {
+    public ApiResponse<User> updateProfile(@RequestBody @Valid UpdateProfileRequest request, Principal principal) {
         User user = getUserByEmail(principal.getName());
 
         User updatedUser = userService.updateProfile(
@@ -40,7 +41,7 @@ public class UserController {
 
     // 3. Đổi mật khẩu
     @PutMapping("/change-password")
-    public ApiResponse<Void> changePassword(@RequestBody ChangePasswordRequest request, Principal principal) {
+    public ApiResponse<Void> changePassword(@RequestBody @Valid ChangePasswordRequest request, Principal principal) {
         User user = getUserByEmail(principal.getName());
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {

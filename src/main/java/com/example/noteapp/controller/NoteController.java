@@ -5,6 +5,7 @@ import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.entity.Note;
 import com.example.noteapp.service.NoteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -18,8 +19,13 @@ public class NoteController {
     private final NoteService noteService;
 
     @GetMapping
-    public ApiResponse<List<Note>> getAllNotes(Principal principal) {
-        return new ApiResponse<>(1000, "Danh sách ghi chú", noteService.getAllNotes(principal.getName()));
+    public ApiResponse<Page<Note>> getAllNotes(
+            @RequestParam(defaultValue = "0") int page, // Mặc định trang 0
+            @RequestParam(defaultValue = "10") int size, // Mặc định 10 note/trang
+            Principal principal) {
+
+        Page<Note> notes = noteService.getAllNotes(principal.getName(), page, size);
+        return new ApiResponse<>(1000, "Danh sách ghi chú (phân trang)", notes);
     }
 
     // 2. Màn hình Lưu trữ

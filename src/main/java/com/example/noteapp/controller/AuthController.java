@@ -7,6 +7,7 @@ import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.dto.response.AuthResponse;
 import com.example.noteapp.entity.User;
 import com.example.noteapp.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ApiResponse<User> register(@RequestBody RegisterRequest request) {
+    public ApiResponse<User> register(@RequestBody @Valid RegisterRequest request) {
         User result = authService.register(request);
 
         return ApiResponse.<User>builder()
@@ -29,7 +30,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ApiResponse<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
         AuthResponse result = authService.login(request);
 
         return ApiResponse.<AuthResponse>builder()

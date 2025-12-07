@@ -2,6 +2,8 @@ package com.example.noteapp.service;
 
 import com.example.noteapp.dto.request.NoteRequest;
 import com.example.noteapp.entity.Note;
+import org.springframework.data.domain.Page;
+
 import java.util.List;
 
 public interface NoteService {
@@ -9,7 +11,7 @@ public interface NoteService {
     Note createNote(String email, NoteRequest request);
 
     // Lấy tất cả ghi chú của User
-    List<Note> getAllNotes(String email);
+    Page<Note> getAllNotes(String email, int page, int size);
 
     List<Note> getArchivedNotes(String email);
     List<Note> getTrashedNotes(String email);

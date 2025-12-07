@@ -4,6 +4,7 @@ import com.example.noteapp.dto.request.LabelRequest;
 import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.entity.Label;
 import com.example.noteapp.service.LabelService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ public class LabelController {
 
     // Tạo nhãn mới
     @PostMapping
-    public ApiResponse<Label> createLabel(@RequestBody LabelRequest request, Principal principal) {
+    public ApiResponse<Label> createLabel(@RequestBody @Valid LabelRequest request, Principal principal) {
         return new ApiResponse<>(1000, "Tạo nhãn thành công", labelService.createLabel(principal.getName(), request));
     }
 

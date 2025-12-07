@@ -4,6 +4,7 @@ import com.example.noteapp.dto.request.ChecklistRequest;
 import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.entity.Checklist;
 import com.example.noteapp.service.ChecklistService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +21,7 @@ public class ChecklistController {
     // Thêm mục vào Note: POST /api/notes/{noteId}/checklists
     @PostMapping("/notes/{noteId}/checklists")
     public ApiResponse<Checklist> addChecklist(@PathVariable Long noteId,
-                                               @RequestBody ChecklistRequest request,
+                                               @RequestBody @Valid ChecklistRequest request,
                                                Principal principal) {
         Checklist item = checklistService.addChecklistItem(noteId, principal.getName(), request);
         return new ApiResponse<>(1000, "Thêm mục thành công", item);
@@ -29,7 +30,7 @@ public class ChecklistController {
     // Sửa mục: PUT /api/checklists/{id}
     @PutMapping("/checklists/{id}")
     public ApiResponse<Checklist> updateChecklist(@PathVariable Long id,
-                                                  @RequestBody ChecklistRequest request,
+                                                  @RequestBody @Valid ChecklistRequest request,
                                                   Principal principal) {
         Checklist item = checklistService.updateChecklistItem(id, principal.getName(), request);
         return new ApiResponse<>(1000, "Cập nhật thành công", item);

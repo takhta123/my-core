@@ -12,6 +12,10 @@ import com.example.noteapp.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page; // Import mới
+import org.springframework.data.domain.PageRequest; // Import mới
+import org.springframework.data.domain.Pageable; // Import mới
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 
@@ -44,10 +48,16 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
-    public List<Note> getAllNotes(String email) {
+    public Page<Note> getAllNotes(String email, int page, int size) {
         User user = getUserByEmail(email);
-        // SỬA LẠI: Chỉ lấy note chưa xóa, chưa archive
-        return noteRepository.findByUserIdAndIsDeletedFalseAndIsArchivedFalseOrderByCreatedAtDesc(user.getId());
+
+        // Tạo đối tượng Pageable:
+        // - page: Trang số mấy (bắt đầu từ 0)
+        // - size: Lấy bao nhiêu note (ví dụ 10)
+        // - Sort: Sắp xếp theo ngày tạo mới nhất (DESC)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        return noteRepository.findByUserIdAndIsDeletedFalseAndIsArchivedFalse(user.getId(), pageable);
     }
 
     @Override

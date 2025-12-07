@@ -23,8 +23,16 @@ public class LabelServiceImpl implements LabelService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // 1. Chuẩn hóa tên nhãn (xóa khoảng trắng thừa đầu đuôi)
+        String labelName = request.getName().trim();
+
+        // 2. Kiểm tra trùng lặp
+        if (labelRepository.existsByUserIdAndName(user.getId(), labelName)) {
+            throw new RuntimeException("Nhãn '" + labelName + "' đã tồn tại!");
+        }
+
         Label label = new Label();
-        label.setName(request.getName());
+        label.setName(labelName); // Lưu tên đã trim()
         label.setUser(user);
 
         return labelRepository.save(label);

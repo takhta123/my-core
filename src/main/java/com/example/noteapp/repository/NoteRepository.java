@@ -1,6 +1,7 @@
 package com.example.noteapp.repository;
 
 import com.example.noteapp.entity.Note;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,13 +12,12 @@ import java.util.List;
 @Repository
 public interface NoteRepository extends JpaRepository<Note, Long> {
 
-    // 1. Lấy ghi chú cho Màn hình chính (Chưa xóa, Chưa lưu trữ)
-    List<Note> findByUserIdAndIsDeletedFalseAndIsArchivedFalseOrderByCreatedAtDesc(Long userId);
+    // 1. Sửa hàm này: Trả về Page thay vì List, và nhận thêm tham số Pageable
+    // Lưu ý: Đã bỏ phần "OrderByCreatedAtDesc" trong tên hàm vì Pageable sẽ lo việc sắp xếp
+    Page<Note> findByUserIdAndIsDeletedFalseAndIsArchivedFalse(Long userId, Pageable pageable);
 
-    // 2. Lấy ghi chú Lưu trữ (Chưa xóa, Đã lưu trữ)
+    // Bạn cũng có thể làm tương tự cho Archive và Trash nếu muốn (để sau cũng được)
     List<Note> findByUserIdAndIsDeletedFalseAndIsArchivedTrueOrderByCreatedAtDesc(Long userId);
-
-    // 3. Lấy ghi chú trong Thùng rác (Đã xóa)
     List<Note> findByUserIdAndIsDeletedTrueOrderByCreatedAtDesc(Long userId);
 
     // 4. Tìm kiếm (Chỉ tìm trong các ghi chú chưa bị xóa vĩnh viễn)
