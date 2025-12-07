@@ -55,4 +55,19 @@ public class EmailServiceImpl implements EmailService {
             log.error("Lỗi gửi reminder: {}", e.getMessage());
         }
     }
+
+    @Override
+    public void sendResetPasswordEmail(String toEmail, String code) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("NoteApp Support <noreply@noteapp.com>");
+            message.setTo(toEmail);
+            message.setSubject("Yêu cầu đặt lại mật khẩu");
+            message.setText("Xin chào,\n\nMã xác thực để đặt lại mật khẩu của bạn là: " + code +
+                    "\n\nMã này sẽ hết hạn sau 15 phút.");
+            mailSender.send(message);
+        } catch (Exception e) {
+            log.error("Lỗi gửi mail reset: {}", e.getMessage());
+        }
+    }
 }

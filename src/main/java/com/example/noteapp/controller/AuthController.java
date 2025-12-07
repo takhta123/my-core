@@ -1,8 +1,6 @@
 package com.example.noteapp.controller;
 
-import com.example.noteapp.dto.request.LoginRequest;
-import com.example.noteapp.dto.request.RegisterRequest;
-import com.example.noteapp.dto.request.VerifyRequest;
+import com.example.noteapp.dto.request.*;
 import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.dto.response.AuthResponse;
 import com.example.noteapp.entity.User;
@@ -65,5 +63,27 @@ public class AuthController {
                 .code(1000)
                 .message("Đã gửi lại mã xác thực mới. Vui lòng kiểm tra email.")
                 .build();
+    }
+
+    // ... (Các API cũ)
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Quên mật khẩu", description = "Gửi email chứa mã xác thực để đặt lại mật khẩu")
+    public ApiResponse<Void> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.getEmail());
+        return new ApiResponse<>(1000, "Đã gửi mã xác thực qua email", null);
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Đặt lại mật khẩu", description = "Dùng mã xác thực để thiết lập mật khẩu mới")
+    public ApiResponse<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return new ApiResponse<>(1000, "Đặt lại mật khẩu thành công", null);
+    }
+
+    @PostMapping("/google")
+    @Operation(summary = "Đăng nhập bằng Google", description = "Gửi ID Token từ Firebase Client lên để đăng nhập/đăng ký tự động")
+    public ApiResponse<AuthResponse> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
+        return new ApiResponse<>(1000, "Đăng nhập Google thành công", authService.loginWithGoogle(request));
     }
 }

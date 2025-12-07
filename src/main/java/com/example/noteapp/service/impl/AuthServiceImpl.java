@@ -1,8 +1,6 @@
 package com.example.noteapp.service.impl;
 
-import com.example.noteapp.dto.request.LoginRequest;
-import com.example.noteapp.dto.request.RegisterRequest;
-import com.example.noteapp.dto.request.VerifyRequest;
+import com.example.noteapp.dto.request.*;
 import com.example.noteapp.dto.response.AuthResponse;
 import com.example.noteapp.entity.User;
 import com.example.noteapp.entity.VerificationCode;
@@ -18,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -139,16 +139,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String generateVerificationCode(User user) {
-        String code = String.valueOf((int) ((Math.random() * 899999) + 100000)); // Sinh số 6 chữ số
+        return generateVerificationCode(user, "REGISTER");
+    }
 
+    private String generateVerificationCode(User user, String type) {
+        String code = String.valueOf((int) ((Math.random() * 899999) + 100000));
         VerificationCode verificationCode = VerificationCode.builder()
                 .code(code)
                 .user(user)
                 .expiryDate(LocalDateTime.now().plusMinutes(15))
-                .type("REGISTER")
+                .type(type) // Lưu loại code
                 .createdAt(LocalDateTime.now())
                 .build();
-
         verificationCodeRepository.save(verificationCode);
         return code;
     }
@@ -177,6 +179,88 @@ public class AuthServiceImpl implements AuthService {
                     .build();
 
             userDeviceRepository.save(newDevice);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Email không tồn tại trong hệ thống"));
+
+        // Sinh mã code loại RESET_PASSWORD
+        String code = generateVerificationCode(user, "RESET_PASSWORD");
+        emailService.sendResetPasswordEmail(email, code);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        VerificationCode vCode = verificationCodeRepository.findByUserIdAndCode(user.getId(), request.getCode())
+                .orElseThrow(() -> new RuntimeException("Mã xác thực không đúng"));
+
+        // Kiểm tra loại code và thời hạn
+        if (!"RESET_PASSWORD".equals(vCode.getType()) || vCode.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Mã xác thực không hợp lệ hoặc đã hết hạn");
+        }
+
+        // Đổi mật khẩu
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Xóa mã đã dùng
+        verificationCodeRepository.delete(vCode);
+    }
+
+    @Override
+    public AuthResponse loginWithGoogle(GoogleLoginRequest request) {
+        try {
+            // 1. Xác thực Token với Firebase
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(request.getIdToken());
+            String email = decodedToken.getEmail();
+            String name = decodedToken.getName();
+            String avatarUrl = decodedToken.getPicture();
+
+            // 2. Kiểm tra xem user đã tồn tại chưa
+            Optional<User> userOpt = userRepository.findByEmail(email);
+            User user;
+
+            if (userOpt.isPresent()) {
+                user = userOpt.get();
+                // Cập nhật lại tên/avatar nếu muốn đồng bộ mới nhất từ Google
+            } else {
+                // 3. Nếu chưa có -> Tự động đăng ký
+                user = User.builder()
+                        .email(email)
+                        .fullName(name)
+                        .avatarUrl(avatarUrl)
+                        .password(passwordEncoder.encode(UUID.randomUUID().toString())) // Mật khẩu ngẫu nhiên
+                        .enabled(true) // Google đã xác thực rồi nên active luôn
+                        .build();
+                user = userRepository.save(user);
+            }
+
+            // 4. Lưu thông tin thiết bị (Tái sử dụng hàm saveUserDevice bạn đã viết)
+            if (request.getDeviceId() != null) {
+                // Chúng ta cần convert GoogleLoginRequest sang LoginRequest hoặc viết hàm overload cho saveUserDevice
+                // Cách nhanh nhất: Tạo object LoginRequest giả để tái sử dụng code
+                LoginRequest loginReq = LoginRequest.builder()
+                        .deviceId(request.getDeviceId())
+                        .deviceToken(request.getDeviceToken())
+                        .deviceType(request.getDeviceType())
+                        .build();
+                saveUserDevice(user, loginReq);
+            }
+
+            // 5. Tạo JWT Token trả về
+            String token = jwtUtils.generateToken(user.getEmail());
+            return AuthResponse.builder().token(token).authenticated(true).build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi xác thực Google: " + e.getMessage());
         }
     }
 }
