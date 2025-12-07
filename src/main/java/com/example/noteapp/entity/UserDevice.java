@@ -14,16 +14,19 @@ public class UserDevice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Token dùng để gửi thông báo (FCM Token)
     private String token;
 
-    // ID định danh thiết bị (ví dụ: Android ID, iOS UUID) để không lưu trùng
+    // ID định danh thiết bị
     private String deviceId;
+
+    // Tên thiết bị (Ví dụ: iPhone 13)
+    private String deviceName;
 
     // Loại thiết bị (ANDROID, IOS, WEB)
     private String deviceType;
 
-    private LocalDateTime lastLoggedIn;
+    // Thời gian đăng nhập cuối cùng
+    private LocalDateTime lastUsed;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

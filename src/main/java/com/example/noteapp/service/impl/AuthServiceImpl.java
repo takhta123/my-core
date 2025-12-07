@@ -11,6 +11,9 @@ import com.example.noteapp.repository.VerificationCodeRepository;
 import com.example.noteapp.service.AuthService;
 import com.example.noteapp.utils.JwtUtils;
 import com.example.noteapp.service.EmailService;
+import com.example.noteapp.entity.UserDevice;
+import com.example.noteapp.repository.UserDeviceRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final EmailService emailService;
+    private final UserDeviceRepository userDeviceRepository;
 
     @Override
     @Transactional
@@ -117,6 +121,10 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Mật khẩu không chính xác");
         }
 
+        if (request.getDeviceId() != null && !request.getDeviceId().isEmpty()) {
+            saveUserDevice(user, request);
+        }
+
         if (!user.isEnabled()) {
             throw new RuntimeException("Tài khoản chưa được kích hoạt");
         }
@@ -143,5 +151,32 @@ public class AuthServiceImpl implements AuthService {
 
         verificationCodeRepository.save(verificationCode);
         return code;
+    }
+
+    private void saveUserDevice(User user, LoginRequest request) {
+        // Tìm xem user này đã từng đăng nhập trên thiết bị này chưa
+        Optional<UserDevice> existingDevice = userDeviceRepository.findByUserAndDeviceId(user, request.getDeviceId());
+
+        if (existingDevice.isPresent()) {
+            // Nếu đã có -> Cập nhật thời gian và token mới
+            UserDevice device = existingDevice.get();
+            device.setLastUsed(LocalDateTime.now()); // <--- Setter này sẽ hoạt động
+            device.setToken(request.getDeviceToken());
+            // Cập nhật thêm tên nếu có thay đổi (tuỳ chọn)
+            // device.setDeviceName("Unknown Device");
+            userDeviceRepository.save(device);
+        } else {
+            // Nếu chưa -> Tạo mới bằng Builder
+            UserDevice newDevice = UserDevice.builder()
+                    .user(user)
+                    .deviceId(request.getDeviceId())
+                    .deviceType(request.getDeviceType())
+                    .token(request.getDeviceToken())
+                    .deviceName("Unknown Device") // Hoặc lấy từ request nếu bạn có gửi lên
+                    .lastUsed(LocalDateTime.now())
+                    .build();
+
+            userDeviceRepository.save(newDevice);
+        }
     }
 }
