@@ -17,6 +17,29 @@ public class NoteController {
 
     private final NoteService noteService;
 
+    @GetMapping
+    public ApiResponse<List<Note>> getAllNotes(Principal principal) {
+        return new ApiResponse<>(1000, "Danh sách ghi chú", noteService.getAllNotes(principal.getName()));
+    }
+
+    // 2. Màn hình Lưu trữ
+    @GetMapping("/archived")
+    public ApiResponse<List<Note>> getArchivedNotes(Principal principal) {
+        return new ApiResponse<>(1000, "Ghi chú đã lưu trữ", noteService.getArchivedNotes(principal.getName()));
+    }
+
+    // 3. Màn hình Thùng rác
+    @GetMapping("/trash")
+    public ApiResponse<List<Note>> getTrashedNotes(Principal principal) {
+        return new ApiResponse<>(1000, "Thùng rác", noteService.getTrashedNotes(principal.getName()));
+    }
+
+    // 4. Tìm kiếm: GET /api/notes/search?keyword=abc
+    @GetMapping("/search")
+    public ApiResponse<List<Note>> searchNotes(@RequestParam String keyword, Principal principal) {
+        return new ApiResponse<>(1000, "Kết quả tìm kiếm", noteService.searchNotes(principal.getName(), keyword));
+    }
+
     // Tạo ghi chú mới
     @PostMapping
     public ApiResponse<Note> createNote(@RequestBody NoteRequest request, Principal principal) {
@@ -25,12 +48,6 @@ public class NoteController {
         return new ApiResponse<>(1000, "Tạo ghi chú thành công", note);
     }
 
-    // Lấy danh sách ghi chú
-    @GetMapping
-    public ApiResponse<List<Note>> getAllNotes(Principal principal) {
-        List<Note> notes = noteService.getAllNotes(principal.getName());
-        return new ApiResponse<>(1000, "Lấy danh sách thành công", notes);
-    }
 
     // Lấy chi tiết 1 ghi chú
     @GetMapping("/{id}")
@@ -60,5 +77,39 @@ public class NoteController {
     public ApiResponse<Void> restoreNote(@PathVariable Long id, Principal principal) {
         noteService.restoreNote(id, principal.getName());
         return new ApiResponse<>(1000, "Đã khôi phục ghi chú", null);
+    }
+
+    @PostMapping("/{noteId}/labels/{labelId}")
+    public ApiResponse<Void> addLabelToNote(@PathVariable Long noteId,
+                                            @PathVariable Long labelId,
+                                            Principal principal) {
+        noteService.addLabelToNote(noteId, labelId, principal.getName());
+        return new ApiResponse<>(1000, "Đã gán nhãn thành công", null);
+    }
+
+    // 2. Gỡ nhãn khỏi ghi chú
+    // DELETE /api/notes/1/labels/5
+    @DeleteMapping("/{noteId}/labels/{labelId}")
+    public ApiResponse<Void> removeLabelFromNote(@PathVariable Long noteId,
+                                                 @PathVariable Long labelId,
+                                                 Principal principal) {
+        noteService.removeLabelFromNote(noteId, labelId, principal.getName());
+        return new ApiResponse<>(1000, "Đã gỡ nhãn thành công", null);
+    }
+
+    // 1. Lưu trữ ghi chú
+// PUT /api/notes/1/archive
+    @PutMapping("/{id}/archive")
+    public ApiResponse<Void> archiveNote(@PathVariable Long id, Principal principal) {
+        noteService.archiveNote(id, principal.getName());
+        return new ApiResponse<>(1000, "Đã lưu trữ ghi chú", null);
+    }
+
+    // 2. Hủy lưu trữ (Mang về màn hình chính)
+// PUT /api/notes/1/unarchive
+    @PutMapping("/{id}/unarchive")
+    public ApiResponse<Void> unarchiveNote(@PathVariable Long id, Principal principal) {
+        noteService.unarchiveNote(id, principal.getName());
+        return new ApiResponse<>(1000, "Đã hủy lưu trữ", null);
     }
 }

@@ -6,6 +6,8 @@ import com.example.noteapp.entity.User;
 import com.example.noteapp.repository.NoteRepository;
 import com.example.noteapp.repository.UserRepository;
 import com.example.noteapp.service.NoteService;
+import com.example.noteapp.repository.LabelRepository;
+import com.example.noteapp.entity.Label;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ public class NoteServiceImpl implements NoteService {
 
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
+    private final LabelRepository labelRepository;
 
     @Override
     @Transactional
@@ -41,8 +44,28 @@ public class NoteServiceImpl implements NoteService {
     @Override
     public List<Note> getAllNotes(String email) {
         User user = getUserByEmail(email);
-        // Gọi hàm repository bạn đã có sẵn
-        return noteRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        // SỬA LẠI: Chỉ lấy note chưa xóa, chưa archive
+        return noteRepository.findByUserIdAndIsDeletedFalseAndIsArchivedFalseOrderByCreatedAtDesc(user.getId());
+    }
+
+    @Override
+    public List<Note> getArchivedNotes(String email) {
+        User user = getUserByEmail(email);
+        return noteRepository.findByUserIdAndIsDeletedFalseAndIsArchivedTrueOrderByCreatedAtDesc(user.getId());
+    }
+
+    @Override
+    public List<Note> getTrashedNotes(String email) {
+        User user = getUserByEmail(email);
+        return noteRepository.findByUserIdAndIsDeletedTrueOrderByCreatedAtDesc(user.getId());
+    }
+
+    @Override
+    public List<Note> searchNotes(String email, String keyword) {
+        User user = getUserByEmail(email);
+
+        // Gọi hàm searchNotes tùy chỉnh vừa viết trong Repository
+        return noteRepository.searchNotes(user.getId(), keyword);
     }
 
     @Override
@@ -82,6 +105,14 @@ public class NoteServiceImpl implements NoteService {
         noteRepository.save(note);
     }
 
+    // Xóa vĩnh viễn (Dùng trong màn hình Thùng rác -> Nút "Xóa ngay")
+    @Override
+    @Transactional
+    public void hardDeleteNote(Long noteId, String email) {
+        Note note = getNoteById(noteId, email);
+        noteRepository.delete(note); // <--- Lệnh này mới xóa bay khỏi DB
+    }
+
     @Override
     @Transactional
     public void restoreNote(Long noteId, String email) {
@@ -94,5 +125,57 @@ public class NoteServiceImpl implements NoteService {
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+    }
+
+    @Override
+    @Transactional
+    public void addLabelToNote(Long noteId, Long labelId, String email) {
+        // Lấy note và kiểm tra quyền sở hữu (đã có hàm này rồi)
+        Note note = getNoteById(noteId, email);
+
+        // Lấy label
+        Label label = labelRepository.findById(labelId)
+                .orElseThrow(() -> new RuntimeException("Nhãn không tồn tại"));
+
+        // Quan trọng: Phải kiểm tra xem nhãn này có đúng là của user này không
+        // (Tránh trường hợp user A lấy nhãn của user B gán vào note của mình)
+        if (!label.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Bạn không có quyền sử dụng nhãn này");
+        }
+
+        // Thêm vào Set
+        note.getLabels().add(label);
+        noteRepository.save(note);
+    }
+
+    @Override
+    @Transactional
+    public void removeLabelFromNote(Long noteId, Long labelId, String email) {
+        Note note = getNoteById(noteId, email);
+
+        Label label = labelRepository.findById(labelId)
+                .orElseThrow(() -> new RuntimeException("Nhãn không tồn tại"));
+
+        // Xóa khỏi Set
+        note.getLabels().remove(label);
+        noteRepository.save(note);
+    }
+
+    @Override
+    @Transactional
+    public void archiveNote(Long noteId, String email) {
+        Note note = getNoteById(noteId, email);
+        note.setArchived(true);
+        // Nếu đang ở thùng rác thì lôi nó ra luôn (tuỳ logic của bạn)
+        note.setDeleted(false);
+        noteRepository.save(note);
+    }
+
+    @Override
+    @Transactional
+    public void unarchiveNote(Long noteId, String email) {
+        Note note = getNoteById(noteId, email);
+        note.setArchived(false);
+        noteRepository.save(note);
     }
 }

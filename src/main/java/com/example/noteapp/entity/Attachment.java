@@ -1,5 +1,6 @@
 package com.example.noteapp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -14,5 +15,6 @@ public class Attachment {
     private Long fileSize;
 
     @ManyToOne @JoinColumn(name = "note_id")
+    @JsonIgnore
     private Note note;
 }
