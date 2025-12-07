@@ -32,10 +32,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/attachments/files/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",           // Cho phép đăng nhập/đăng ký
+                                "/v3/api-docs/**",        // API docs dạng JSON (quan trọng)
+                                "/swagger-ui/**",         // Giao diện Swagger
+                                "/swagger-ui.html"        // Trang chủ Swagger
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 }

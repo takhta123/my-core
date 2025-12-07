@@ -10,10 +10,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/notes")
 @RequiredArgsConstructor
+@Tag(name = "Note Controller", description = "Quản lý các thao tác với Ghi chú")
 public class NoteController {
 
     private final NoteService noteService;
@@ -48,6 +51,7 @@ public class NoteController {
 
     // Tạo ghi chú mới
     @PostMapping
+    @Operation(summary = "Tạo ghi chú mới", description = "API này dùng để user tạo một ghi chú mới")
     public ApiResponse<Note> createNote(@RequestBody NoteRequest request, Principal principal) {
         // principal.getName() sẽ trả về email (do cấu hình trong UserDetailsService)
         Note note = noteService.createNote(principal.getName(), request);

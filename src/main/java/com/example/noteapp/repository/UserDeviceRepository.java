@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface UserDeviceRepository extends JpaRepository<UserDevice, Long> {
     // Tìm thiết bị dựa trên User và DeviceId
     Optional<UserDevice> findByUserAndDeviceId(User user, String deviceId);
+    List<UserDevice> findByUserId(Long userId);
 }

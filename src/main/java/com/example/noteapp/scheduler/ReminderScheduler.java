@@ -1,8 +1,11 @@
 package com.example.noteapp.scheduler;
 
 import com.example.noteapp.entity.Note;
+import com.example.noteapp.entity.UserDevice;
 import com.example.noteapp.repository.NoteRepository;
+import com.example.noteapp.repository.UserDeviceRepository;
 import com.example.noteapp.service.EmailService;
+import com.example.noteapp.service.FirebaseMessagingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +22,8 @@ public class ReminderScheduler {
 
     private final NoteRepository noteRepository;
     private final EmailService emailService;
+    private final UserDeviceRepository userDeviceRepository;
+    private final FirebaseMessagingService firebaseMessagingService;
 
     // Chạy mỗi 60 giây (60000 ms) một lần
     @Scheduled(fixedRate = 60000)
@@ -41,9 +46,22 @@ public class ReminderScheduler {
                 emailService.sendReminderEmail(note.getUser().getEmail(), note.getTitle(), note.getContent());
 
                 // Đánh dấu là đã gửi để không gửi lại lần sau
-                note.setReminderSent(true);
+                List<UserDevice> devices = userDeviceRepository.findByUserId(note.getUser().getId());
 
-                // Lưu lại trạng thái
+                if (devices != null && !devices.isEmpty()) {
+                    for (UserDevice device : devices) {
+                        if (device.getToken() != null && !device.getToken().isEmpty()) {
+                            firebaseMessagingService.sendNotification(
+                                    device.getToken(),
+                                    "Nhắc nhở: " + note.getTitle(),
+                                    note.getContent()
+                            );
+                        }
+                    }
+                }
+
+                // 3. Cập nhật trạng thái
+                note.setReminderSent(true);
                 noteRepository.save(note);
 
             } catch (Exception e) {
