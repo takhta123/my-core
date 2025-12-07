@@ -25,10 +25,9 @@ import java.security.Principal;
 public class AttachmentController {
 
     private final AttachmentService attachmentService;
-    private final FileStorageService fileStorageService;
 
     @PostMapping("/notes/{noteId}")
-    @Operation(summary = "Upload file", description = "Tải file lên và đính kèm vào ghi chú (Dùng form-data)")
+    @Operation(summary = "Upload file (Cloudinary)", description = "Tải file lên Cloudinary và lưu link vào ghi chú")
     public ApiResponse<Attachment> uploadFile(@PathVariable Long noteId,
                                               @RequestParam("file") MultipartFile file,
                                               Principal principal) {
@@ -37,33 +36,9 @@ public class AttachmentController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Xóa file", description = "Xóa file đính kèm khỏi ghi chú và ổ cứng")
+    @Operation(summary = "Xóa file", description = "Xóa file khỏi Cloudinary và Database")
     public ApiResponse<Void> deleteFile(@PathVariable Long id, Principal principal) {
         attachmentService.deleteAttachment(id, principal.getName());
         return new ApiResponse<>(1000, "Xóa file thành công", null);
-    }
-
-    @GetMapping("/files/{fileName:.+}")
-    @Operation(summary = "Xem/Tải file", description = "API công khai để hiển thị ảnh hoặc tải file")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
-        // Load file as Resource
-        Resource resource = fileStorageService.loadFileAsResource(fileName);
-
-        // Xác định Content-Type
-        String contentType = null;
-        try {
-            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
-        } catch (IOException ex) {
-            // Mặc định nếu không xác định được
-        }
-
-        if(contentType == null) {
-            contentType = "application/octet-stream";
-        }
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
     }
 }
