@@ -4,13 +4,18 @@ import com.example.noteapp.entity.User;
 import com.example.noteapp.repository.UserRepository;
 import com.example.noteapp.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails; // Import mới
+import org.springframework.security.core.userdetails.UserDetailsService; // Import mới
+import org.springframework.security.core.userdetails.UsernameNotFoundException; // Import mới
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList; // Import mới
 import java.util.Optional;
 
 @Service
-public class UserServiceImpl implements UserService {
+// 1. Thêm implements UserDetailsService
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Autowired
     private UserRepository userRepository;
@@ -54,5 +59,24 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    // 2. Thêm hàm loadUserByUsername bắt buộc của Spring Security
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // Tìm user trong DB
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy user với email: " + email));
+
+        // Convert User (Entity) sang UserDetails (Spring Security)
+        return new org.springframework.security.core.userdetails.User(
+                user.getEmail(),
+                user.getPassword(),
+                user.isEnabled(), // Trạng thái kích hoạt (true/false)
+                true, // accountNonExpired
+                true, // credentialsNonExpired
+                true, // accountNonLocked
+                new ArrayList<>() // Danh sách quyền (Roles). Vì User Entity chưa có Role, tạm thời để rỗng.
+        );
     }
 }

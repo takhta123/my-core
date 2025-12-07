@@ -1,0 +1,9 @@
+package com.example.noteapp.dto.request;
+
+import lombok.Data;
+
+@Data
+public class UpdateProfileRequest {
+    private String fullName;
+    private String avatarUrl;
+}

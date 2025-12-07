@@ -42,15 +42,13 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .fullName(request.getFullName())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .enabled(false) // Chưa kích hoạt
+                .enabled(false) // <--- ĐIỂM 1: Luôn false khi mới tạo
                 .build();
 
         User savedUser = userRepository.save(user);
 
-        // Sinh code và lưu xuống DB (hàm này bạn đã có ở dưới)
+        // ... logic gửi mail
         String code = generateVerificationCode(savedUser);
-
-        // 2. THÊM DÒNG NÀY: Gửi email chứa mã code
         emailService.sendVerificationEmail(savedUser.getEmail(), code);
 
         return savedUser;
@@ -86,8 +84,9 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy email"));
 
-        if (user.isEnabled()) { // SỬA: Check isEnabled cho đồng bộ
-            throw new RuntimeException("Tài khoản đã được xác thực rồi");
+        // <--- ĐIỂM 2: Chặn gửi lại nếu đã kích hoạt
+        if (user.isEnabled()) {
+            throw new RuntimeException("Tài khoản đã được xác thực rồi, không cần gửi lại mã.");
         }
 
         // --- Logic chặn spam 60s ---

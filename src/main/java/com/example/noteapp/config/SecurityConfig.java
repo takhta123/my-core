@@ -7,8 +7,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+// import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; // Xóa import này
+// import org.springframework.security.crypto.password.PasswordEncoder; // Xóa import này
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -16,14 +16,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Autowired
-    private JwtAuthFilter jwtAuthFilter; // Filter bạn đã tạo
+    private JwtAuthFilter jwtAuthFilter;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    // --- ĐÃ XÓA BEAN PASSWORD ENCODER Ở ĐÂY ĐỂ TRÁNH VÒNG LẶP ---
 
-    // --- BỔ SUNG: Bean này cần thiết để AuthService gọi hàm authenticate() ---
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -34,12 +30,9 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Các API trong AuthController (login, register, verify...) được phép truy cập tự do
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Tất cả request còn lại (ví dụ /api/notes) bắt buộc phải có Token
                         .anyRequest().authenticated()
                 )
-                // --- BỔ SUNG: Thêm bộ lọc JWT vào trước bộ lọc mặc định ---
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
