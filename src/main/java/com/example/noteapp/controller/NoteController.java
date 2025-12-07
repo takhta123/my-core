@@ -112,4 +112,11 @@ public class NoteController {
         noteService.unarchiveNote(id, principal.getName());
         return new ApiResponse<>(1000, "Đã hủy lưu trữ", null);
     }
+
+    // 3. Xóa vĩnh viễn: DELETE /api/notes/{id}/permanent
+    @DeleteMapping("/{id}/permanent")
+    public ApiResponse<Void> hardDeleteNote(@PathVariable Long id, Principal principal) {
+        noteService.hardDeleteNote(id, principal.getName());
+        return new ApiResponse<>(1000, "Đã xóa vĩnh viễn ghi chú", null);
+    }
 }

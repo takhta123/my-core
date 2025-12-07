@@ -8,6 +8,7 @@ import com.example.noteapp.repository.UserRepository;
 import com.example.noteapp.service.NoteService;
 import com.example.noteapp.repository.LabelRepository;
 import com.example.noteapp.entity.Label;
+import com.example.noteapp.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class NoteServiceImpl implements NoteService {
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
     private final LabelRepository labelRepository;
+    private final FileStorageService fileStorageService;
 
     @Override
     @Transactional
@@ -110,7 +112,16 @@ public class NoteServiceImpl implements NoteService {
     @Transactional
     public void hardDeleteNote(Long noteId, String email) {
         Note note = getNoteById(noteId, email);
-        noteRepository.delete(note); // <--- Lệnh này mới xóa bay khỏi DB
+
+        // 2. THÊM ĐOẠN NÀY: Xóa tất cả file đính kèm trên ổ cứng trước
+        if (note.getAttachments() != null && !note.getAttachments().isEmpty()) {
+            for (com.example.noteapp.entity.Attachment attachment : note.getAttachments()) {
+                fileStorageService.deleteFile(attachment.getFileName());
+            }
+        }
+
+        // Sau đó mới xóa Note khỏi Database (lúc này Cascade sẽ tự xóa dòng trong bảng attachments)
+        noteRepository.delete(note);
     }
 
     @Override
