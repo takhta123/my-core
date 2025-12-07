@@ -4,6 +4,8 @@ import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.entity.Attachment;
 import com.example.noteapp.service.AttachmentService;
 import com.example.noteapp.service.FileStorageService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -19,14 +21,14 @@ import java.security.Principal;
 @RestController
 @RequestMapping("/api/attachments")
 @RequiredArgsConstructor
+@Tag(name = "Attachment Management", description = "Upload và xem file đính kèm")
 public class AttachmentController {
 
     private final AttachmentService attachmentService;
     private final FileStorageService fileStorageService;
 
-    // 1. Upload file vào Note
-    // POST /api/attachments/notes/{noteId}
     @PostMapping("/notes/{noteId}")
+    @Operation(summary = "Upload file", description = "Tải file lên và đính kèm vào ghi chú (Dùng form-data)")
     public ApiResponse<Attachment> uploadFile(@PathVariable Long noteId,
                                               @RequestParam("file") MultipartFile file,
                                               Principal principal) {
@@ -34,17 +36,15 @@ public class AttachmentController {
         return new ApiResponse<>(1000, "Upload thành công", attachment);
     }
 
-    // 2. Xóa file
-    // DELETE /api/attachments/{id}
     @DeleteMapping("/{id}")
+    @Operation(summary = "Xóa file", description = "Xóa file đính kèm khỏi ghi chú và ổ cứng")
     public ApiResponse<Void> deleteFile(@PathVariable Long id, Principal principal) {
         attachmentService.deleteAttachment(id, principal.getName());
         return new ApiResponse<>(1000, "Xóa file thành công", null);
     }
 
-    // 3. API công khai để xem/tải file (Dùng cho thẻ <img src="...">)
-    // GET /api/attachments/files/{fileName}
     @GetMapping("/files/{fileName:.+}")
+    @Operation(summary = "Xem/Tải file", description = "API công khai để hiển thị ảnh hoặc tải file")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
         // Load file as Resource
         Resource resource = fileStorageService.loadFileAsResource(fileName);

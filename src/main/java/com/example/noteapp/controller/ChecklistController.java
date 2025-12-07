@@ -4,22 +4,24 @@ import com.example.noteapp.dto.request.ChecklistRequest;
 import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.entity.Checklist;
 import com.example.noteapp.service.ChecklistService;
+import io.swagger.v3.oas.annotations.Operation; // Import
+import io.swagger.v3.oas.annotations.tags.Tag; // Import
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Tag(name = "Checklist Management", description = "Quản lý các mục công việc trong Ghi chú")
 public class ChecklistController {
 
     private final ChecklistService checklistService;
 
-    // Thêm mục vào Note: POST /api/notes/{noteId}/checklists
     @PostMapping("/notes/{noteId}/checklists")
+    @Operation(summary = "Thêm mục công việc", description = "Thêm một dòng to-do vào trong ghi chú cụ thể")
     public ApiResponse<Checklist> addChecklist(@PathVariable Long noteId,
                                                @RequestBody @Valid ChecklistRequest request,
                                                Principal principal) {
@@ -27,8 +29,8 @@ public class ChecklistController {
         return new ApiResponse<>(1000, "Thêm mục thành công", item);
     }
 
-    // Sửa mục: PUT /api/checklists/{id}
     @PutMapping("/checklists/{id}")
+    @Operation(summary = "Cập nhật mục công việc", description = "Sửa nội dung hoặc đánh dấu hoàn thành/chưa hoàn thành")
     public ApiResponse<Checklist> updateChecklist(@PathVariable Long id,
                                                   @RequestBody @Valid ChecklistRequest request,
                                                   Principal principal) {
@@ -36,8 +38,8 @@ public class ChecklistController {
         return new ApiResponse<>(1000, "Cập nhật thành công", item);
     }
 
-    // Xóa mục: DELETE /api/checklists/{id}
     @DeleteMapping("/checklists/{id}")
+    @Operation(summary = "Xóa mục công việc", description = "Xóa hoàn toàn một dòng checklist khỏi ghi chú")
     public ApiResponse<Void> deleteChecklist(@PathVariable Long id, Principal principal) {
         checklistService.deleteChecklistItem(id, principal.getName());
         return new ApiResponse<>(1000, "Xóa thành công", null);

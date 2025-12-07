@@ -7,6 +7,8 @@ import com.example.noteapp.dto.response.ApiResponse;
 import com.example.noteapp.dto.response.AuthResponse;
 import com.example.noteapp.entity.User;
 import com.example.noteapp.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation; // Import này
+import io.swagger.v3.oas.annotations.tags.Tag; // Import này
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +16,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "API Đăng ký, Đăng nhập và Xác thực tài khoản") // <--- Tên nhóm
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping("/register")
+    @Operation(summary = "Đăng ký tài khoản", description = "Tạo tài khoản mới và gửi mã xác thực qua Email") // <--- Mô tả API
     public ApiResponse<User> register(@RequestBody @Valid RegisterRequest request) {
         User result = authService.register(request);
 
@@ -30,6 +34,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Đăng nhập", description = "Kiểm tra email/password và trả về JWT Token + Lưu thông tin thiết bị")
     public ApiResponse<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
         AuthResponse result = authService.login(request);
 
@@ -40,8 +45,8 @@ public class AuthController {
                 .build();
     }
 
-    // --- ĐÃ SỬA: Gộp lại thành 1 hàm verify duy nhất, dùng VerifyRequest ---
     @PostMapping("/verify")
+    @Operation(summary = "Xác thực tài khoản (OTP)", description = "Nhập mã code 6 số gửi về email để kích hoạt tài khoản")
     public ApiResponse<Void> verify(@RequestBody VerifyRequest request) {
         authService.verifyAccount(request);
 
@@ -51,8 +56,8 @@ public class AuthController {
                 .build();
     }
 
-    // --- ĐÃ SỬA: Chuyển sang dùng ApiResponse cho đồng bộ ---
     @PostMapping("/resend-code")
+    @Operation(summary = "Gửi lại mã OTP", description = "Gửi lại mã xác thực mới nếu mã cũ hết hạn (giới hạn 60s/lần)")
     public ApiResponse<Void> resendCode(@RequestParam String email) {
         authService.resendVerificationCode(email);
 
