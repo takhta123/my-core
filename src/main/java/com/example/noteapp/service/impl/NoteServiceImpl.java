@@ -40,6 +40,7 @@ public class NoteServiceImpl implements NoteService {
                 .isPinned(request.isPinned())
                 .isArchived(request.isArchived())
                 .reminder(request.getReminder())
+                .isReminderSent(false)
                 .isDeleted(false) // Mặc định không nằm trong thùng rác
                 .user(user)       // Gán user sở hữu
                 .build();
@@ -105,6 +106,18 @@ public class NoteServiceImpl implements NoteService {
         note.setPinned(request.isPinned());
         note.setArchived(request.isArchived());
         note.setReminder(request.getReminder());
+
+        if (request.getReminder() != null) {
+            // Nếu người dùng đổi giờ nhắc khác giờ cũ -> Reset trạng thái gửi
+            if (!request.getReminder().equals(note.getReminder())) {
+                note.setReminder(request.getReminder());
+                note.setReminderSent(false); // <--- Reset để gửi lại vào giờ mới
+            }
+        } else {
+            // Nếu người dùng xóa giờ nhắc (gửi null lên)
+            note.setReminder(null);
+            note.setReminderSent(false); // Hoặc true cũng được, miễn là ko gửi
+        }
 
         return noteRepository.save(note);
     }
@@ -187,7 +200,6 @@ public class NoteServiceImpl implements NoteService {
     public void archiveNote(Long noteId, String email) {
         Note note = getNoteById(noteId, email);
         note.setArchived(true);
-        // Nếu đang ở thùng rác thì lôi nó ra luôn (tuỳ logic của bạn)
         note.setDeleted(false);
         noteRepository.save(note);
     }

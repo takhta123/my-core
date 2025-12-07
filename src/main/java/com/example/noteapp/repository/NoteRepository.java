@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -24,4 +26,6 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     // Thêm chữ IgnoreCase vào cuối
     @Query("SELECT n FROM Note n WHERE n.user.id = :userId AND n.isDeleted = false AND (n.title LIKE CONCAT('%', :keyword, '%') OR n.content LIKE CONCAT('%', :keyword, '%'))")
     List<Note> searchNotes(@Param("userId") Long userId, @Param("keyword") String keyword);
+
+    List<Note> findByReminderBeforeAndIsReminderSentFalseAndIsDeletedFalse(LocalDateTime now);
 }

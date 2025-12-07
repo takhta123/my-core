@@ -36,4 +36,23 @@ public class EmailServiceImpl implements EmailService {
             // throw new RuntimeException("Gửi mail thất bại");
         }
     }
+
+    @Override
+    public void sendReminderEmail(String toEmail, String noteTitle, String noteContent) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("NoteApp Support <noreply@noteapp.com>");
+            message.setTo(toEmail);
+            message.setSubject("Nhắc nhở: " + noteTitle);
+            message.setText("Xin chào,\n\nBạn có một nhắc nhở cho ghi chú:\n\n"
+                    + "Tiêu đề: " + noteTitle + "\n"
+                    + "Nội dung: " + noteContent + "\n\n"
+                    + "Hãy kiểm tra ứng dụng để xem chi tiết.");
+
+            mailSender.send(message);
+            log.info("Đã gửi reminder đến: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Lỗi gửi reminder: {}", e.getMessage());
+        }
+    }
 }

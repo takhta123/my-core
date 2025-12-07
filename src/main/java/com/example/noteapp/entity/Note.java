@@ -29,6 +29,9 @@ public class Note {
 
     private LocalDateTime reminder;
 
+    @Column(name = "is_reminder_sent")
+    private boolean isReminderSent = false;
+
     @Column(name = "background_color")
     private String backgroundColor;
 
