@@ -10,6 +10,7 @@ import com.example.noteapp.repository.LabelRepository;
 import com.example.noteapp.entity.Label;
 import com.example.noteapp.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page; // Import mới
@@ -27,6 +28,25 @@ public class NoteServiceImpl implements NoteService {
     private final UserRepository userRepository;
     private final LabelRepository labelRepository;
     private final FileStorageService fileStorageService;
+
+    private User getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    // 2. Lấy Note theo ID và kiểm tra xem User hiện tại có phải chủ sở hữu không
+    private Note getNoteAndCheckOwner(Long id) {
+        Note note = noteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Note not found"));
+
+        User currentUser = getCurrentUser();
+
+        if (!note.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Unauthorized access to note");
+        }
+        return note;
+    }
 
     @Override
     @Transactional
@@ -62,15 +82,31 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<Note> getArchivedNotes(int page, int size) {
+        User user = getCurrentUser(); // Hàm helper lấy user hiện tại
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        return noteRepository.findByUserIdAndIsArchivedTrueAndIsDeletedFalse(user.getId(), pageable);
+    }
+
+    // [MỚI] Lấy danh sách Thùng rác
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Note> getTrashedNotes(int page, int size) {
+        User user = getCurrentUser();
+        // Thùng rác thường sắp xếp theo ngày xóa (updatedAt)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        return noteRepository.findByUserIdAndIsDeletedTrue(user.getId(), pageable);
+    }
+
+    @Override
     public List<Note> getArchivedNotes(String email) {
-        User user = getUserByEmail(email);
-        return noteRepository.findByUserIdAndIsDeletedFalseAndIsArchivedTrueOrderByCreatedAtDesc(user.getId());
+        return List.of();
     }
 
     @Override
     public List<Note> getTrashedNotes(String email) {
-        User user = getUserByEmail(email);
-        return noteRepository.findByUserIdAndIsDeletedTrueOrderByCreatedAtDesc(user.getId());
+        return List.of();
     }
 
     @Override

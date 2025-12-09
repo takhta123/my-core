@@ -2,6 +2,7 @@ package com.example.noteapp.service;
 
 import com.example.noteapp.dto.request.NoteRequest;
 import com.example.noteapp.entity.Note;
+import com.example.noteapp.entity.User;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -12,6 +13,8 @@ public interface NoteService {
 
     // Lấy tất cả ghi chú của User
     Page<Note> getAllNotes(String email, int page, int size);
+    Page<Note> getArchivedNotes(int page, int size); // Lấy danh sách lưu trữ
+    Page<Note> getTrashedNotes(int page, int size);
 
     List<Note> getArchivedNotes(String email);
     List<Note> getTrashedNotes(String email);

@@ -17,6 +17,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     // 1. Sửa hàm này: Trả về Page thay vì List, và nhận thêm tham số Pageable
     // Lưu ý: Đã bỏ phần "OrderByCreatedAtDesc" trong tên hàm vì Pageable sẽ lo việc sắp xếp
     Page<Note> findByUserIdAndIsDeletedFalseAndIsArchivedFalse(Long userId, Pageable pageable);
+    Page<Note> findByUserIdAndIsArchivedTrueAndIsDeletedFalse(Long userId, Pageable pageable);
+    Page<Note> findByUserIdAndIsDeletedTrue(Long userId, Pageable pageable);
 
     // Bạn cũng có thể làm tương tự cho Archive và Trash nếu muốn (để sau cũng được)
     List<Note> findByUserIdAndIsDeletedFalseAndIsArchivedTrueOrderByCreatedAtDesc(Long userId);

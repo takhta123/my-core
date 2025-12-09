@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -30,18 +31,6 @@ public class NoteController {
 
         Page<Note> notes = noteService.getAllNotes(principal.getName(), page, size);
         return new ApiResponse<>(1000, "Danh sách ghi chú (phân trang)", notes);
-    }
-
-    @GetMapping("/archived")
-    @Operation(summary = "Lấy ghi chú đã lưu trữ", description = "Danh sách các ghi chú trong mục Archive")
-    public ApiResponse<List<Note>> getArchivedNotes(Principal principal) {
-        return new ApiResponse<>(1000, "Ghi chú đã lưu trữ", noteService.getArchivedNotes(principal.getName()));
-    }
-
-    @GetMapping("/trash")
-    @Operation(summary = "Lấy ghi chú trong thùng rác", description = "Danh sách các ghi chú đã bị xóa tạm thời")
-    public ApiResponse<List<Note>> getTrashedNotes(Principal principal) {
-        return new ApiResponse<>(1000, "Thùng rác", noteService.getTrashedNotes(principal.getName()));
     }
 
     @GetMapping("/search")
@@ -124,5 +113,30 @@ public class NoteController {
     public ApiResponse<Void> hardDeleteNote(@PathVariable Long id, Principal principal) {
         noteService.hardDeleteNote(id, principal.getName());
         return new ApiResponse<>(1000, "Đã xóa vĩnh viễn ghi chú", null);
+    }
+
+    @GetMapping("/archived")
+    public ResponseEntity<ApiResponse<Page<Note>>> getArchivedNotes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Note> notes = noteService.getArchivedNotes(page, size);
+        return ResponseEntity.ok(ApiResponse.<Page<Note>>builder()
+                .result(notes)
+                .code(1000)
+                .message("Lấy danh sách lưu trữ thành công")
+                .build());
+    }
+
+    // [MỚI] API Lấy danh sách Thùng rác
+    @GetMapping("/trash")
+    public ResponseEntity<ApiResponse<Page<Note>>> getTrashedNotes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Note> notes = noteService.getTrashedNotes(page, size);
+        return ResponseEntity.ok(ApiResponse.<Page<Note>>builder()
+                .result(notes)
+                .code(1000)
+                .message("Lấy danh sách thùng rác thành công")
+                .build());
     }
 }
