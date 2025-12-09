@@ -31,11 +31,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
 
-        // 1. Kiểm tra header có chứa Bearer Token không
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7); // Cắt bỏ chữ "Bearer "
-            username = jwtUtils.extractUsername(token);
-        }
+        try {
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+                username = jwtUtils.extractUsername(token); // Nếu token rác, nó sẽ ném lỗi ở đây
+            }
 
         // 2. Nếu có username và chưa được xác thực trong Context
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -49,6 +49,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
+        }
+        } catch (Exception e) {
+            // Log nhẹ nhàng thôi, đừng làm sập app
+            System.out.println("JWT Filter Error (Ignored): " + e.getMessage());
+            // Quan trọng: Không set Authentication, cứ để request đi tiếp
         }
         filterChain.doFilter(request, response);
     }
