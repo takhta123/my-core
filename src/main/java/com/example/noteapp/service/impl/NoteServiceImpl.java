@@ -72,11 +72,13 @@ public class NoteServiceImpl implements NoteService {
     public Page<Note> getAllNotes(String email, int page, int size) {
         User user = getUserByEmail(email);
 
-        // Tạo đối tượng Pageable:
-        // - page: Trang số mấy (bắt đầu từ 0)
-        // - size: Lấy bao nhiêu note (ví dụ 10)
-        // - Sort: Sắp xếp theo ngày tạo mới nhất (DESC)
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        // --- SỬA ĐOẠN NÀY ---
+        // Sắp xếp:
+        // 1. isPinned giảm dần (Ghim lên đầu)
+        // 2. createdAt giảm dần (Mới tạo -> Cũ tạo)
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Order.desc("isPinned"), Sort.Order.desc("createdAt"))); // <--- Đổi updatedAt thành createdAt
+        // --------------------
 
         return noteRepository.findByUserIdAndIsDeletedFalseAndIsArchivedFalse(user.getId(), pageable);
     }
@@ -161,8 +163,14 @@ public class NoteServiceImpl implements NoteService {
     @Override
     @Transactional
     public void deleteNote(Long noteId, String email) {
-        Note note = getNoteById(noteId, email);
-        note.setDeleted(true); // Soft delete: Chỉ đánh dấu là đã xóa
+        Note note = getNoteById(noteId, email); // Hàm này đã kiểm tra quyền sở hữu
+
+        // --- CẬP NHẬT LOGIC: Dọn dẹp trạng thái trước khi xóa ---
+        note.setPinned(false);   // <--- Hủy ghim
+        note.setArchived(false); // <--- (Khuyên dùng) Hủy luôn lưu trữ nếu có, để trạng thái sạch sẽ
+        // --------------------------------------------------------
+
+        note.setDeleted(true);   // Đưa vào thùng rác
         noteRepository.save(note);
     }
 
@@ -235,8 +243,13 @@ public class NoteServiceImpl implements NoteService {
     @Transactional
     public void archiveNote(Long noteId, String email) {
         Note note = getNoteById(noteId, email);
+
+        // --- SỬA LOGIC LƯU TRỮ (TỐI ƯU UX) ---
         note.setArchived(true);
+        note.setPinned(false); // <--- Bắt buộc hủy ghim khi lưu trữ
         note.setDeleted(false);
+        // -------------------------------------
+
         noteRepository.save(note);
     }
 
