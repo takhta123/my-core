@@ -9,6 +9,7 @@ import com.example.noteapp.service.NoteService;
 import com.example.noteapp.repository.LabelRepository;
 import com.example.noteapp.entity.Label;
 import com.example.noteapp.service.FileStorageService;
+import com.google.firebase.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -206,6 +207,26 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<Note> getNotesByLabel(Long labelId, String email, int page, int size) {
+        // SỬA: Thay AppException bằng RuntimeException
+        Label label = labelRepository.findById(labelId)
+                .orElseThrow(() -> new RuntimeException("Nhãn không tồn tại")); // Sửa ở đây
+
+        User user = getUserByEmail(email);
+
+        if (!label.getUser().getId().equals(user.getId())) {
+            // SỬA: Thay AppException bằng RuntimeException
+            throw new RuntimeException("Bạn không có quyền truy cập nhãn này"); // Sửa ở đây
+        }
+
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Order.desc("isPinned"), Sort.Order.desc("createdAt")));
+
+        return noteRepository.findByLabelId(labelId, pageable);
+    }
+
+    @Override
     @Transactional
     public void addLabelToNote(Long noteId, Long labelId, String email) {
         // Lấy note và kiểm tra quyền sở hữu (đã có hàm này rồi)
@@ -259,5 +280,16 @@ public class NoteServiceImpl implements NoteService {
         Note note = getNoteById(noteId, email);
         note.setArchived(false);
         noteRepository.save(note);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Note> getNotesWithReminders(String email, int page, int size) {
+        User user = getUserByEmail(email); // Hàm helper cũ
+
+        // Sắp xếp: Ghi chú nào sắp đến hạn thì hiện lên đầu (reminder ASC)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("reminder").ascending());
+
+        return noteRepository.findByUserIdAndReminderIsNotNullAndIsDeletedFalse(user.getId(), pageable);
     }
 }

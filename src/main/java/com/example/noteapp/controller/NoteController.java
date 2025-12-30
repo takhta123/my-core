@@ -94,6 +94,17 @@ public class NoteController {
         return new ApiResponse<>(1000, "Đã gỡ nhãn thành công", null);
     }
 
+    @GetMapping("/label/{labelId}")
+    @Operation(summary = "Lấy ghi chú theo nhãn", description = "Lấy danh sách ghi chú thuộc một nhãn cụ thể (bao gồm cả lưu trữ)")
+    public ApiResponse<Page<Note>> getNotesByLabel(
+            @PathVariable Long labelId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Principal principal) {
+        Page<Note> notes = noteService.getNotesByLabel(labelId, principal.getName(), page, size);
+        return new ApiResponse<>(1000, "Thành công", notes);
+    }
+
     @PutMapping("/{id}/archive")
     @Operation(summary = "Lưu trữ ghi chú", description = "Chuyển ghi chú vào mục Archive")
     public ApiResponse<Void> archiveNote(@PathVariable Long id, Principal principal) {
@@ -138,5 +149,17 @@ public class NoteController {
                 .code(1000)
                 .message("Lấy danh sách thùng rác thành công")
                 .build());
+    }
+
+    // [MỚI] API Lấy danh sách Lời nhắc
+    @GetMapping("/reminders")
+    @Operation(summary = "Lấy danh sách lời nhắc", description = "Lấy các ghi chú có đặt giờ nhắc nhở, sắp xếp theo thời gian nhắc tới gần nhất")
+    public ApiResponse<Page<Note>> getNotesWithReminders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Principal principal) {
+
+        Page<Note> notes = noteService.getNotesWithReminders(principal.getName(), page, size);
+        return new ApiResponse<>(1000, "Danh sách lời nhắc", notes);
     }
 }

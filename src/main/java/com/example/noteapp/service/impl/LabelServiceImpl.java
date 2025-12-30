@@ -60,4 +60,33 @@ public class LabelServiceImpl implements LabelService {
 
         labelRepository.delete(label);
     }
+
+    @Override
+    public Label updateLabel(Long labelId, String newName, String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Label label = labelRepository.findById(labelId)
+                .orElseThrow(() -> new RuntimeException("Nhãn không tồn tại"));
+
+        // 1. Kiểm tra quyền sở hữu
+        if (!label.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Bạn không có quyền chỉnh sửa nhãn này");
+        }
+
+        String trimmedName = newName.trim();
+
+        // 2. Nếu tên không đổi thì trả về luôn, không cần query DB
+        if (label.getName().equals(trimmedName)) {
+            return label;
+        }
+
+        // 3. Kiểm tra trùng tên (với các nhãn khác của user này)
+        if (labelRepository.existsByUserIdAndName(user.getId(), trimmedName)) {
+            throw new RuntimeException("Nhãn '" + trimmedName + "' đã tồn tại!");
+        }
+
+        label.setName(trimmedName);
+        return labelRepository.save(label);
+    }
 }

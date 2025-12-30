@@ -8,4 +8,5 @@ public interface LabelService {
     Label createLabel(String email, LabelRequest request);
     List<Label> getAllLabels(String email);
     void deleteLabel(Long labelId, String email);
+    Label updateLabel(Long labelId, String newName, String email);
 }

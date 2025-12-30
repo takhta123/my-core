@@ -19,6 +19,7 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     Page<Note> findByUserIdAndIsDeletedFalseAndIsArchivedFalse(Long userId, Pageable pageable);
     Page<Note> findByUserIdAndIsArchivedTrueAndIsDeletedFalse(Long userId, Pageable pageable);
     Page<Note> findByUserIdAndIsDeletedTrue(Long userId, Pageable pageable);
+    Page<Note> findByUserIdAndReminderIsNotNullAndIsDeletedFalse(Long userId, Pageable pageable);
 
     // Bạn cũng có thể làm tương tự cho Archive và Trash nếu muốn (để sau cũng được)
     List<Note> findByUserIdAndIsDeletedFalseAndIsArchivedTrueOrderByCreatedAtDesc(Long userId);
@@ -30,4 +31,12 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     List<Note> searchNotes(@Param("userId") Long userId, @Param("keyword") String keyword);
 
     List<Note> findByReminderBeforeAndIsReminderSentFalseAndIsDeletedFalse(LocalDateTime now);
+
+    @Query("SELECT n FROM Note n WHERE n.reminder IS NOT NULL AND n.reminder <= :now AND n.isReminderSent = false AND n.isDeleted = false")
+    List<Note> findAllDueReminders(LocalDateTime now);
+
+    @Query("SELECT n FROM Note n JOIN n.labels l WHERE l.id = :labelId AND n.isDeleted = false")
+    Page<Note> findByLabelId(Long labelId, Pageable pageable);
+
+    List<Note> findByIsDeletedTrueAndUpdatedAtBefore(LocalDateTime cutoffDate);
 }

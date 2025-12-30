@@ -39,4 +39,12 @@ public class LabelController {
         labelService.deleteLabel(id, principal.getName());
         return new ApiResponse<>(1000, "Xóa nhãn thành công", null);
     }
+
+    @PutMapping("/{id}")
+    public ApiResponse<Label> updateLabel(@PathVariable Long id, @RequestBody @Valid LabelRequest request, Principal principal) {
+        // Bạn cần implement hàm updateLabel trong Service tương tự createLabel
+        // Logic: Tìm label theo ID -> Set name mới -> Save
+        Label updatedLabel = labelService.updateLabel(id, request.getName(), principal.getName());
+        return new ApiResponse<>(1000, "Cập nhật nhãn thành công", updatedLabel);
+    }
 }

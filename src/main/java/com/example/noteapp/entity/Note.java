@@ -1,5 +1,6 @@
 package com.example.noteapp.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -23,8 +24,13 @@ public class Note {
     @Column(columnDefinition = "LONGTEXT")
     private String content;
 
+    @JsonProperty("isPinned")
     private boolean isPinned;
+
+    @JsonProperty("isArchived")
     private boolean isArchived;
+
+    @JsonProperty("isDeleted")
     private boolean isDeleted;
 
     private LocalDateTime reminder;
@@ -59,6 +65,7 @@ public class Note {
             joinColumns = @JoinColumn(name = "note_id"),
             inverseJoinColumns = @JoinColumn(name = "label_id")
     )
+    @EqualsAndHashCode.Exclude
     private Set<Label> labels;
 
     // Quan hệ 1-n với Checklist

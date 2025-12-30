@@ -10,8 +10,6 @@ public class NoteRequest {
     private String content;
     private String backgroundColor;
 
-    // --- SỬA Ở ĐÂY: Thêm @JsonProperty để map đúng tên trường từ Frontend ---
-
     @JsonProperty("isPinned")
     private boolean isPinned;
 

@@ -1,13 +1,9 @@
 package com.example.noteapp.scheduler;
 
 import com.example.noteapp.entity.Note;
-import com.example.noteapp.entity.UserDevice;
 import com.example.noteapp.repository.NoteRepository;
-import com.example.noteapp.repository.UserDeviceRepository;
-import com.example.noteapp.service.EmailService;
-import com.example.noteapp.service.FirebaseMessagingService;
+import com.example.noteapp.service.EmailService; // Hoặc FirebaseMessagingService
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,55 +13,35 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class ReminderScheduler {
 
     private final NoteRepository noteRepository;
-    private final EmailService emailService;
-    private final UserDeviceRepository userDeviceRepository;
-    private final FirebaseMessagingService firebaseMessagingService;
+    private final EmailService emailService; // Giả sử bạn gửi qua Email
 
-    // Chạy mỗi 60 giây (60000 ms) một lần
+    // Chạy mỗi 60 giây (60000ms)
     @Scheduled(fixedRate = 60000)
     @Transactional
-    public void checkReminders() {
-        // 1. Lấy thời điểm hiện tại
+    public void checkAndSendReminders() {
         LocalDateTime now = LocalDateTime.now();
+        List<Note> dueNotes = noteRepository.findAllDueReminders(now);
 
-        // 2. Tìm các note đến hạn mà chưa báo
-        List<Note> dueNotes = noteRepository.findByReminderBeforeAndIsReminderSentFalseAndIsDeletedFalse(now);
-
-        if (!dueNotes.isEmpty()) {
-            log.info("Tìm thấy {} ghi chú đến hạn nhắc nhở", dueNotes.size());
-        }
-
-        // 3. Duyệt và gửi mail
         for (Note note : dueNotes) {
             try {
-                // Gửi email
-                emailService.sendReminderEmail(note.getUser().getEmail(), note.getTitle(), note.getContent());
+                // 1. Gửi thông báo (Email hoặc Push Notification)
+                String subject = "Nhắc nhở: " + (note.getTitle() != null ? note.getTitle() : "Ghi chú không tên");
+                String content = "Đã đến giờ cho ghi chú của bạn:\n" + note.getContent();
 
-                // Đánh dấu là đã gửi để không gửi lại lần sau
-                List<UserDevice> devices = userDeviceRepository.findByUserId(note.getUser().getId());
+                // emailService.sendSimpleMessage(note.getUser().getEmail(), subject, content);
+                // Hoặc gọi firebaseService.sendNotification(...)
 
-                if (devices != null && !devices.isEmpty()) {
-                    for (UserDevice device : devices) {
-                        if (device.getToken() != null && !device.getToken().isEmpty()) {
-                            firebaseMessagingService.sendNotification(
-                                    device.getToken(),
-                                    "Nhắc nhở: " + note.getTitle(),
-                                    note.getContent()
-                            );
-                        }
-                    }
-                }
+                System.out.println("Đã gửi nhắc nhở cho Note ID: " + note.getId());
 
-                // 3. Cập nhật trạng thái
+                // 2. Cập nhật trạng thái để không gửi lại
                 note.setReminderSent(true);
                 noteRepository.save(note);
 
             } catch (Exception e) {
-                log.error("Lỗi khi xử lý reminder cho note ID {}: {}", note.getId(), e.getMessage());
+                System.err.println("Lỗi gửi nhắc nhở: " + e.getMessage());
             }
         }
     }

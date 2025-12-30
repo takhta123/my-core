@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service // Đánh dấu đây là Bean để Spring quản lý
@@ -14,6 +15,7 @@ public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Async
     @Override
     public void sendVerificationEmail(String toEmail, String code) {
         try {
@@ -37,6 +39,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Async
     @Override
     public void sendReminderEmail(String toEmail, String noteTitle, String noteContent) {
         try {
