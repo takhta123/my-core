@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -59,7 +60,7 @@ public class UserController {
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
     }
 
-    @PostMapping("/avatar")
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload Avatar")
     public ApiResponse<String> uploadAvatar(@RequestParam("file") MultipartFile file, Principal principal) {
         // Tận dụng FileStorageService đã có của bạn
