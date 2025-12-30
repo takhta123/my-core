@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.security.Principal;
 
@@ -61,13 +62,27 @@ public class UserController {
     }
 
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload Avatar")
-    public ApiResponse<String> uploadAvatar(@RequestParam("file") MultipartFile file, Principal principal) {
-        // Tận dụng FileStorageService đã có của bạn
-        java.util.Map<?, ?> uploadResult = fileStorageService.uploadFile(file);
-        String avatarUrl = (String) uploadResult.get("secure_url");
+    @Operation(summary = "Upload Avatar với tọa độ cắt")
+    public ApiResponse<String> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("x") int x,
+            @RequestParam("y") int y,
+            @RequestParam("w") int w,
+            @RequestParam("h") int h,
+            Principal principal) {
 
-        // Gọi hàm updateProfile (đã có sẵn) để lưu URL
+        // 1. Upload ảnh GỐC lên Cloudinary
+        java.util.Map<?, ?> uploadResult = fileStorageService.uploadFile(file);
+        String originalUrl = (String) uploadResult.get("secure_url");
+
+        // 2. Biến đổi URL gốc thành URL đã cắt (Transformation URL)
+        // URL gốc: https://.../upload/v1234/id.jpg
+        // URL mới: https://.../upload/x_10,y_10,w_200,h_200,c_crop/v1234/id.jpg
+
+        String transformation = String.format("x_%d,y_%d,w_%d,h_%d,c_crop", x, y, w, h);
+        String avatarUrl = originalUrl.replace("/upload/", "/upload/" + transformation + "/");
+
+        // 3. Lưu URL đã biến đổi vào Database
         UpdateProfileRequest request = new UpdateProfileRequest();
         request.setAvatarUrl(avatarUrl);
         userService.updateProfile(principal.getName(), request);
