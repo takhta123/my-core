@@ -3,6 +3,8 @@ package com.example.noteapp.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,6 +43,15 @@ public class User {
 
     @Column(name = "is_verified")
     private boolean enabled = false;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "gender")
+    private String gender; // Lưu "MALE", "FEMALE", "OTHER"
 
     @PrePersist
     protected void onCreate() { createdAt = LocalDateTime.now(); }

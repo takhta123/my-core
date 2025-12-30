@@ -44,7 +44,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()) {
             user.setAvatarUrl(request.getAvatarUrl());
         }
-        // Thêm các trường khác như dateOfBirth, address nếu có trong DTO
+
+        if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
+        if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getGender() != null) user.setGender(request.getGender());
+
 
         return userRepository.save(user);
     }
