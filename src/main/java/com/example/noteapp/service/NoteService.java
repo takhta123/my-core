@@ -12,7 +12,7 @@ public interface NoteService {
     Note createNote(String email, NoteRequest request);
 
     // Lấy tất cả ghi chú của User
-    Page<Note> getAllNotes(String email, int page, int size);
+    Page<Note> getAllNotes(String email, int page, int size, String search);
     Page<Note> getArchivedNotes(int page, int size); // Lấy danh sách lưu trữ
     Page<Note> getTrashedNotes(int page, int size);
     Page<Note> getNotesWithReminders(String email, int page, int size);
@@ -20,7 +20,7 @@ public interface NoteService {
 
     List<Note> getArchivedNotes(String email);
     List<Note> getTrashedNotes(String email);
-    List<Note> searchNotes(String email, String keyword);
+
 
 
     Note getNoteById(Long noteId, String email);

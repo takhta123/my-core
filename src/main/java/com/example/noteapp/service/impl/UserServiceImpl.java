@@ -1,27 +1,27 @@
 package com.example.noteapp.service.impl;
 
+import com.example.noteapp.dto.request.ChangePasswordRequest;
+import com.example.noteapp.dto.request.UpdateProfileRequest;
 import com.example.noteapp.entity.User;
 import com.example.noteapp.repository.UserRepository;
 import com.example.noteapp.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails; // Import mới
-import org.springframework.security.core.userdetails.UserDetailsService; // Import mới
-import org.springframework.security.core.userdetails.UsernameNotFoundException; // Import mới
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList; // Import mới
 import java.util.Optional;
 
+
 @Service
-// 1. Thêm implements UserDetailsService
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService, UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Optional<User> findByEmail(String email) {
@@ -34,30 +34,38 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public User updateProfile(Long userId, String newFullName, String newAvatarUrl) {
-        User user = userRepository.findById(userId)
+    public User updateProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (newFullName != null && !newFullName.isEmpty()) {
-            user.setFullName(newFullName);
+        if (request.getFullName() != null && !request.getFullName().isEmpty()) {
+            user.setFullName(request.getFullName());
         }
-        if (newAvatarUrl != null && !newAvatarUrl.isEmpty()) {
-            user.setAvatarUrl(newAvatarUrl);
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()) {
+            user.setAvatarUrl(request.getAvatarUrl());
         }
+        // Thêm các trường khác như dateOfBirth, address nếu có trong DTO
 
         return userRepository.save(user);
     }
 
+
     @Override
-    public void changePassword(Long userId, String oldPassword, String newPassword) {
-        User user = userRepository.findById(userId)
+    public void changePassword(String email, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new RuntimeException("Mật khẩu cũ không chính xác");
+        // [SỬA] getCurrentPassword() -> getOldPassword()
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Mật khẩu hiện tại không chính xác");
         }
 
-        user.setPassword(passwordEncoder.encode(newPassword));
+        // [SỬA] getConfirmationPassword() -> getConfirmPassword()
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException("Mật khẩu xác nhận không khớp");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
 

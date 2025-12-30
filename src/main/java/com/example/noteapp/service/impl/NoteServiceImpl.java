@@ -70,16 +70,16 @@ public class NoteServiceImpl implements NoteService {
     }
 
     @Override
-    public Page<Note> getAllNotes(String email, int page, int size) {
+    @Transactional(readOnly = true)
+    public Page<Note> getAllNotes(String email, int page, int size, String search) {
         User user = getUserByEmail(email);
 
-        // --- SỬA ĐOẠN NÀY ---
-        // Sắp xếp:
-        // 1. isPinned giảm dần (Ghim lên đầu)
-        // 2. createdAt giảm dần (Mới tạo -> Cũ tạo)
         Pageable pageable = PageRequest.of(page, size,
                 Sort.by(Sort.Order.desc("isPinned"), Sort.Order.desc("createdAt"))); // <--- Đổi updatedAt thành createdAt
-        // --------------------
+
+        if (search != null && !search.trim().isEmpty()) {
+            return noteRepository.searchNotes(user.getId(), search.trim(), pageable);
+        }
 
         return noteRepository.findByUserIdAndIsDeletedFalseAndIsArchivedFalse(user.getId(), pageable);
     }
@@ -112,13 +112,7 @@ public class NoteServiceImpl implements NoteService {
         return List.of();
     }
 
-    @Override
-    public List<Note> searchNotes(String email, String keyword) {
-        User user = getUserByEmail(email);
 
-        // Gọi hàm searchNotes tùy chỉnh vừa viết trong Repository
-        return noteRepository.searchNotes(user.getId(), keyword);
-    }
 
     @Override
     public Note getNoteById(Long noteId, String email) {

@@ -27,9 +27,10 @@ public class NoteController {
     public ApiResponse<Page<Note>> getAllNotes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
             Principal principal) {
 
-        Page<Note> notes = noteService.getAllNotes(principal.getName(), page, size);
+        Page<Note> notes = noteService.getAllNotes(principal.getName(), page, size, search);
         return new ApiResponse<>(1000, "Danh sách ghi chú (phân trang)", notes);
     }
 
