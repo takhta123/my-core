@@ -42,6 +42,10 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     @Query("SELECT n FROM Note n WHERE n.user.id = :userId AND n.isDeleted = false AND " +
             "(LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(n.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    org.springframework.data.domain.Page<Note> searchNotes(Long userId, String keyword, org.springframework.data.domain.Pageable pageable);
+            "LOWER(CAST(n.content AS String)) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Note> searchNotes(
+            @Param("userId") Long userId,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 }

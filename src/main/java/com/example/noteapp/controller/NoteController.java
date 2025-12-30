@@ -22,23 +22,22 @@ public class NoteController {
 
     private final NoteService noteService;
 
+    // --- API CHÍNH: Vừa lấy danh sách, vừa tìm kiếm ---
     @GetMapping
-    @Operation(summary = "Lấy danh sách ghi chú (Màn hình chính)", description = "Lấy các ghi chú chưa xóa và chưa lưu trữ. Có phân trang.")
+    @Operation(summary = "Lấy danh sách ghi chú", description = "Lấy danh sách (có phân trang) hoặc tìm kiếm nếu có param 'search'")
     public ApiResponse<Page<Note>> getAllNotes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String search, // Param này dùng để tìm kiếm
             Principal principal) {
 
+        // Hàm này trong Service đã xử lý logic: Nếu có 'search' thì tìm, không thì lấy tất cả
         Page<Note> notes = noteService.getAllNotes(principal.getName(), page, size, search);
-        return new ApiResponse<>(1000, "Danh sách ghi chú (phân trang)", notes);
+        return new ApiResponse<>(1000, "Danh sách ghi chú", notes);
     }
 
-    @GetMapping("/search")
-    @Operation(summary = "Tìm kiếm ghi chú", description = "Tìm theo tiêu đề hoặc nội dung (không phân biệt hoa thường)")
-    public ApiResponse<List<Note>> searchNotes(@RequestParam String keyword, Principal principal) {
-        return new ApiResponse<>(1000, "Kết quả tìm kiếm", noteService.searchNotes(principal.getName(), keyword));
-    }
+    // --- ĐÃ XÓA ĐOẠN @GetMapping("/search") GÂY LỖI ---
+    // Lý do: Logic tìm kiếm đã được gộp vào API @GetMapping ở trên.
 
     @PostMapping
     @Operation(summary = "Tạo ghi chú mới", description = "Tạo một ghi chú mới với tiêu đề, nội dung, màu sắc...")
@@ -139,7 +138,6 @@ public class NoteController {
                 .build());
     }
 
-    // [MỚI] API Lấy danh sách Thùng rác
     @GetMapping("/trash")
     public ResponseEntity<ApiResponse<Page<Note>>> getTrashedNotes(
             @RequestParam(defaultValue = "0") int page,
@@ -152,7 +150,6 @@ public class NoteController {
                 .build());
     }
 
-    // [MỚI] API Lấy danh sách Lời nhắc
     @GetMapping("/reminders")
     @Operation(summary = "Lấy danh sách lời nhắc", description = "Lấy các ghi chú có đặt giờ nhắc nhở, sắp xếp theo thời gian nhắc tới gần nhất")
     public ApiResponse<Page<Note>> getNotesWithReminders(
