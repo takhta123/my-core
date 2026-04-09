@@ -8,9 +8,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-@Service // Đánh dấu đây là Bean để Spring quản lý
+
 @RequiredArgsConstructor
-@Slf4j // Để dùng log.info, log.error
+@Slf4j
+@Service
 public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
@@ -21,7 +22,6 @@ public class EmailServiceImpl implements EmailService {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
 
-            // Cấu hình nội dung email
             message.setFrom("NoteApp Support <noreply@noteapp.com>");
             message.setTo(toEmail);
             message.setSubject("Mã xác thực đăng ký tài khoản");
@@ -34,8 +34,7 @@ public class EmailServiceImpl implements EmailService {
 
         } catch (Exception e) {
             log.error("Lỗi khi gửi email đến {}: {}", toEmail, e.getMessage());
-            // Tùy chọn: Có thể throw lỗi ra để AuthServiceImpl biết việc gửi mail thất bại
-            // throw new RuntimeException("Gửi mail thất bại");
+
         }
     }
 

@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.time.Duration;
 
 @Service
-@RequiredArgsConstructor // Tự động inject các repository và encoder (khỏi cần @Autowired)
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -46,12 +46,11 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .fullName(request.getFullName())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .enabled(false) // <--- ĐIỂM 1: Luôn false khi mới tạo
+                .enabled(false)
                 .build();
 
         User savedUser = userRepository.save(user);
 
-        // ... logic gửi mail
         String code = generateVerificationCode(savedUser);
         emailService.sendVerificationEmail(savedUser.getEmail(), code);
 
@@ -61,24 +60,20 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void verifyAccount(VerifyRequest request) {
-        // 1. Tìm user
+
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        // 2. Tìm mã xác thực gần nhất trong DB (giả sử bạn có repository cho VerificationCode)
         VerificationCode vCode = verificationCodeRepository.findByUserIdAndCode(user.getId(), request.getCode())
                 .orElseThrow(() -> new RuntimeException("Mã xác thực không đúng"));
 
-        // 3. Kiểm tra hết hạn
         if (vCode.getExpiryDate().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Mã xác thực đã hết hạn");
         }
 
-        // 4. Xác thực thành công -> Update User
         user.setEnabled(true);
         userRepository.save(user);
 
-        // 5. Xóa mã cũ (tùy chọn, để sạch DB)
         verificationCodeRepository.deleteByUserId(user.getId());
     }
 
@@ -88,12 +83,10 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy email"));
 
-        // <--- ĐIỂM 2: Chặn gửi lại nếu đã kích hoạt
         if (user.isEnabled()) {
             throw new RuntimeException("Tài khoản đã được xác thực rồi, không cần gửi lại mã.");
         }
 
-        // --- Logic chặn spam 60s ---
         Optional<VerificationCode> lastCodeOpt = verificationCodeRepository.findTopByUserIdOrderByCreatedAtDesc(user.getId());
 
         if (lastCodeOpt.isPresent()) {
@@ -105,10 +98,8 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        // --- SỬA: Gọi hàm có tham số user ---
         String newCode = generateVerificationCode(user);
 
-        // Gửi email
         emailService.sendVerificationEmail(email, newCode);
     }
 
@@ -148,7 +139,7 @@ public class AuthServiceImpl implements AuthService {
                 .code(code)
                 .user(user)
                 .expiryDate(LocalDateTime.now().plusMinutes(15))
-                .type(type) // Lưu loại code
+                .type(type)
                 .createdAt(LocalDateTime.now())
                 .build();
         verificationCodeRepository.save(verificationCode);
@@ -156,25 +147,24 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void saveUserDevice(User user, LoginRequest request) {
-        // Tìm xem user này đã từng đăng nhập trên thiết bị này chưa
+
         Optional<UserDevice> existingDevice = userDeviceRepository.findByUserAndDeviceId(user, request.getDeviceId());
 
         if (existingDevice.isPresent()) {
-            // Nếu đã có -> Cập nhật thời gian và token mới
+
             UserDevice device = existingDevice.get();
-            device.setLastUsed(LocalDateTime.now()); // <--- Setter này sẽ hoạt động
+            device.setLastUsed(LocalDateTime.now());
             device.setToken(request.getDeviceToken());
-            // Cập nhật thêm tên nếu có thay đổi (tuỳ chọn)
-            // device.setDeviceName("Unknown Device");
+
             userDeviceRepository.save(device);
         } else {
-            // Nếu chưa -> Tạo mới bằng Builder
+
             UserDevice newDevice = UserDevice.builder()
                     .user(user)
                     .deviceId(request.getDeviceId())
                     .deviceType(request.getDeviceType())
                     .token(request.getDeviceToken())
-                    .deviceName("Unknown Device") // Hoặc lấy từ request nếu bạn có gửi lên
+                    .deviceName("Unknown Device")
                     .lastUsed(LocalDateTime.now())
                     .build();
 
@@ -188,7 +178,6 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Email không tồn tại trong hệ thống"));
 
-        // Sinh mã code loại RESET_PASSWORD
         String code = generateVerificationCode(user, "RESET_PASSWORD");
         emailService.sendResetPasswordEmail(email, code);
     }
@@ -202,51 +191,43 @@ public class AuthServiceImpl implements AuthService {
         VerificationCode vCode = verificationCodeRepository.findByUserIdAndCode(user.getId(), request.getCode())
                 .orElseThrow(() -> new RuntimeException("Mã xác thực không đúng"));
 
-        // Kiểm tra loại code và thời hạn
         if (!"RESET_PASSWORD".equals(vCode.getType()) || vCode.getExpiryDate().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Mã xác thực không hợp lệ hoặc đã hết hạn");
         }
 
-        // Đổi mật khẩu
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        // Xóa mã đã dùng
         verificationCodeRepository.delete(vCode);
     }
 
     @Override
     public AuthResponse loginWithGoogle(GoogleLoginRequest request) {
         try {
-            // 1. Xác thực Token với Firebase
+
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(request.getIdToken());
             String email = decodedToken.getEmail();
             String name = decodedToken.getName();
             String avatarUrl = decodedToken.getPicture();
 
-            // 2. Kiểm tra xem user đã tồn tại chưa
             Optional<User> userOpt = userRepository.findByEmail(email);
             User user;
 
             if (userOpt.isPresent()) {
                 user = userOpt.get();
-                // Cập nhật lại tên/avatar nếu muốn đồng bộ mới nhất từ Google
             } else {
-                // 3. Nếu chưa có -> Tự động đăng ký
+
                 user = User.builder()
                         .email(email)
                         .fullName(name)
                         .avatarUrl(avatarUrl)
-                        .password(passwordEncoder.encode(UUID.randomUUID().toString())) // Mật khẩu ngẫu nhiên
-                        .enabled(true) // Google đã xác thực rồi nên active luôn
+                        .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                        .enabled(true)
                         .build();
                 user = userRepository.save(user);
             }
 
-            // 4. Lưu thông tin thiết bị (Tái sử dụng hàm saveUserDevice bạn đã viết)
             if (request.getDeviceId() != null) {
-                // Chúng ta cần convert GoogleLoginRequest sang LoginRequest hoặc viết hàm overload cho saveUserDevice
-                // Cách nhanh nhất: Tạo object LoginRequest giả để tái sử dụng code
                 LoginRequest loginReq = LoginRequest.builder()
                         .deviceId(request.getDeviceId())
                         .deviceToken(request.getDeviceToken())
@@ -255,7 +236,6 @@ public class AuthServiceImpl implements AuthService {
                 saveUserDevice(user, loginReq);
             }
 
-            // 5. Tạo JWT Token trả về
             String token = jwtUtils.generateToken(user.getEmail());
             return AuthResponse.builder().token(token).authenticated(true).build();
 
